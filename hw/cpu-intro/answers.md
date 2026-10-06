@@ -1,26 +1,411 @@
- 第4章作业 (cpu-intro)
+## Q1
+- Prediction / 预测:
+总时间 10，CPU 利用率 100%。
+状态表：
+```
+Time PID 0 PID 1 CPU IOs
+1 RUN:cpu READY 1
+2 RUN:cpu READY 1
+3 RUN:cpu READY 1
+4 RUN:cpu READY 1
+5 RUN:cpu READY 1
+6 DONE RUN:cpu 1
+7 DONE RUN:cpu 1
+8 DONE RUN:cpu 1
+9 DONE RUN:cpu 1
+10 DONE RUN:cpu 1
+11 DONE DONE
+```
+- Reasoning / 理由:两个进程都只用 CPU，没有 I/O，所以 PID 0 跑完 5 条 CPU 指令后才切到 PID 1。CPU 全程不空闲。
+- Verified result / 验证结果:
+- Analysis / 分析:
 
-## 第1题：./process-run.py -l 5:100,5:100
-预测：总计需要 10 个时间单位 (Time units)。
-核对：运行加 -c 参数后，图表显示在第 10 个时间单位时两个进程都 DONE。
-## 第2题：./process-run.py -l 3:0,5:100,5:100,5:0 -c
-预测：总计 46 个时间单位。
-核对：运行结果最后一行显示 Time: 46
-## 第3题：./process-run.py -l 3:0,5:100,5:100,5:0 -c -S SWITCH_ON_END
-预测：总计 66 个时间单位。
-核对：运行结果最后一行显示 Time: 66
-## 第4题：./process-run.py -l 3:0,5:100,5:100,5:0 -c -S SWITCH_ON_IO
-预测：总计 46 个时间单位。
-核对：运行结果最后一行显示 Time: 46
-## 第5题：./process-run.py -l 3:0,5:100,5:100,5:0 -c -I IO_RUN_LATER
-预测：总计 46 个时间单位。
-核对：运行结果最后一行显示 Time: 46
-## 第6题：./process-run.py -l 3:0,5:100,5:100,5:0 -c -I IO_RUN_IMMEDIATE
-预测：总计 50 个时间单位。
-核对：运行结果最后一行显示 Time: 50
-## 第7题：./process-run.py -l 3:0,5:100,5:100,5:0 -c -p 2
-预测：总计 46 个时间单位。
-核对：运行结果 Stats: Total Time 46
-## 第8题：./process-run.py -l 3:0,5:100,5:100,5:0 -c -p 2 -I IO_RUN_IMMEDIATE
-预测：总计 50 个时间单位。
-核对：运行结果 Stats: Total Time 50
+## Q2
+- Prediction / 预测:
+总时间 12，CPU 利用率 4/12 ≈ 33.33%。
+状态表：
+```
+Time PID 0 PID 1 CPU IOs
+1 RUN:cpu READY 1
+2 RUN:cpu READY 1
+3 RUN:cpu READY 1
+4 RUN:cpu READY 1
+5 DONE RUN:io 1
+6 DONE BLOCKED 1
+7 DONE BLOCKED 1
+8 DONE BLOCKED 1
+9 DONE BLOCKED 1
+10 DONE BLOCKED 1
+11 DONE RUN:io_done 1
+12 DONE DONE
+```
+- Reasoning / 理由:PID 0 先用 4 个 tick 跑完 4 条 CPU 指令。然后切到 PID 1，它只有一次 I/O：第 5 tick 发起 I/O，第 6–10 tick 阻塞 5 tick，第 11 tick 处理完成，第 12 tick 结束。CPU 忙的 tick 是 1–5 和 11，共 6 个 tick。
+- Verified result / 验证结果:
+- Analysis / 分析:
+
+## Q3
+- Prediction / 预测:
+总时间 12，CPU 利用率 6/12 ≈ 50%
+状态表：
+```
+Time PID 0 PID 1 CPU IOs
+1 RUN:io READY 1
+2 BLOCKED RUN:cpu 1
+3 BLOCKED RUN:cpu 1
+4 BLOCKED RUN:cpu 1
+5 BLOCKED RUN:cpu 1
+6 BLOCKED DONE 1
+7 RUN:io_done DONE 1
+8 DONE DONE
+```
+- Reasoning / 理由:PID 0 先运行，第 1 tick 发起 I/O。因为默认 SWITCH_ON_IO，PID 0 阻塞后立即切换到 PID 1，PID 1 在第 2–5 tick 用 CPU 跑完 4 条指令，第 6 tick 结束。与此同时 PID 0 在第 2–6 tick 阻塞 5 tick。第 7 tick I/O 完成，PID 0 用 1 个 CPU tick 处理完成，第 8 tick 结束。CPU 忙的 tick 是 1、2、3、4、5、7，共 6 个 tick。
+- Verified result / 验证结果:
+- Analysis / 分析:
+
+## Q4
+- Prediction / 预测:
+总时间 13，CPU 利用率 10/13 ≈ 76.92%。
+状态表：
+```
+Time PID 0 PID 1 CPU IOs
+1 RUN:io READY 1
+2 BLOCKED READY 1
+3 BLOCKED READY 1
+4 BLOCKED READY 1
+5 BLOCKED READY 1
+6 BLOCKED READY 1
+7 RUN:io_done READY 1
+8 DONE RUN:cpu 1
+9 DONE RUN:cpu 1
+10 DONE RUN:cpu 1
+11 DONE RUN:cpu 1
+12 DONE DONE
+```
+- Reasoning / 理由:因为 -S SWITCH_ON_END，只有当进程结束时才会切换，所以 PID 0 发起 I/O 并阻塞期间，CPU 不会切到 PID 1，PID 1 一直处于 READY。PID 0 在第 1 tick 发起 I/O，第 2–6 tick 阻塞 5 tick，第 7 tick 处理完成，第 7 tick 结束后切换。PID 1 从第 8 到 11 tick 跑完 4 条 CPU 指令。CPU 忙的 tick 是 1、7、8、9、10、11，共 6 个 tick。
+- Verified result / 验证结果:
+- Analysis / 分析:
+
+## Q5
+- - Prediction / 预测:
+总时间 8，CPU 利用率 6/8 = 75%。
+状态表：
+```
+Time PID 0 PID 1 CPU IOs
+1 RUN:io READY 1
+2 BLOCKED RUN:cpu 1
+3 BLOCKED RUN:cpu 1
+4 BLOCKED RUN:cpu 1
+5 BLOCKED RUN:cpu 1
+6 BLOCKED DONE 1
+7 RUN:io_done DONE 1
+8 DONE DONE
+```
+- Reasoning / 理由:-S SWITCH_ON_IO 允许在进程发起 I/O 时立即切换，所以 PID 0 第 1 tick 发起 I/O 后，第 2 tick 就切到 PID 1。PID 1 用第 2–5 tick 跑完 4 条 CPU 指令，第 6 tick 结束。同时 PID 0 在第 2–6 tick 阻塞。第 7 tick I/O 完成，PID 0 用 1 tick 处理完成，第 8 tick 结束。CPU 忙的 tick 是 1、2、3、4、5、7，共 6 个 tick，所以利用率 6/8 = 75%。
+- Verified result / 验证结果:
+- Analysis / 分析:
+
+## Q6
+- - Prediction / 预测:
+总时间 21，CPU 利用率 9/21 ≈ 42.86%。
+状态表：
+```
+Time PID 0 PID 1 PID 2 PID 3 CPU IOs
+1 RUN:io READY READY READY 1
+2 BLOCKED RUN:cpu READY READY 1 1
+3 BLOCKED RUN:cpu READY READY 1 1
+4 BLOCKED RUN:cpu READY READY 1 1
+5 BLOCKED RUN:cpu READY READY 1 1
+6 BLOCKED RUN:cpu READY READY 1 1
+7 READY DONE RUN:cpu READY 1 1
+8 READY DONE RUN:cpu READY 1 1
+9 READY DONE RUN:cpu READY 1 1
+10 READY DONE RUN:cpu READY 1 1
+11 READY DONE RUN:cpu READY 1 1
+12 RUN:io DONE DONE RUN:cpu 1
+13 BLOCKED DONE DONE RUN:cpu 1 1
+14 BLOCKED DONE DONE RUN:cpu 1 1
+15 BLOCKED DONE DONE RUN:cpu 1 1
+16 BLOCKED DONE DONE RUN:cpu 1 1
+17 BLOCKED DONE DONE DONE 1 1
+18 RUN:io_done DONE DONE DONE 1
+19 RUN:io DONE DONE DONE 1
+20 BLOCKED DONE DONE DONE 1
+21 RUN:io_done DONE DONE DONE 1
+22 DONE DONE DONE DONE
+```
+- Reasoning / 理由:PID 0 全是 I/O。第 1 tick 发起第一次 I/O，第 2–6 tick 阻塞；因为 IO_RUN_LATER，I/O 完成后 PID 0 不会立刻重跑，而是排到队尾。第 2–6 tick CPU 交给 PID 1；第 7–11 tick 交给 PID 2；第 12–16 tick 交给 PID 3。PID 0 的第二次 I/O 在第 12 tick 发起，第三次在第 19 tick 发起。整个过程 CPU 在 1–6、12、18、19、21 这些 tick 上有工作。
+- Verified result / 验证结果:
+- Analysis / 分析:
+
+## Q7
+- Prediction / 预测:
+总时间 21，CPU 利用率 11/21 ≈ 52.38%。
+状态表：
+```
+Time PID 0 PID 1 PID 2 PID 3 CPU IOs
+1 RUN:io READY READY READY 1
+2 BLOCKED RUN:cpu READY READY 1 1
+3 BLOCKED RUN:cpu READY READY 1 1
+4 BLOCKED RUN:cpu READY READY 1 1
+5 BLOCKED RUN:cpu READY READY 1 1
+6 BLOCKED RUN:cpu READY READY 1 1
+7 RUN:io_done DONE RUN:cpu READY 1 1
+8 RUN:io DONE RUN:cpu READY 1 1
+9 BLOCKED DONE RUN:cpu READY 1 1
+10 BLOCKED DONE RUN:cpu READY 1 1
+11 BLOCKED DONE RUN:cpu READY 1 1
+12 BLOCKED DONE RUN:cpu READY 1 1
+13 BLOCKED DONE DONE RUN:cpu 1 1
+14 RUN:io_done DONE DONE RUN:cpu 1
+15 RUN:io DONE DONE RUN:cpu 1
+16 BLOCKED DONE DONE RUN:cpu 1 1
+17 BLOCKED DONE DONE RUN:cpu 1 1
+18 BLOCKED DONE DONE DONE 1 1
+19 BLOCKED DONE DONE DONE 1
+20 RUN:io_done DONE DONE DONE 1
+21 DONE DONE DONE DONE
+```
+- Reasoning / 理由:与 Q6 相同：PID 0 全是 I/O，PID 1–3 各 5 条 CPU。区别是 IO_RUN_IMMEDIATE，PID 0 的 I/O 一完成就立刻重跑，不等其他进程。所以第 7 tick I/O 完成后，PID 0 马上在第 7 tick 处理 `io_done`、第 8 tick 发起下一次 I/O。这样 PID 0 的三次 I/O 能更早完成，但也会频繁打断 CPU 密集型进程。总时间与 Q6 相近，但 CPU 利用率更高，因为 PID 0 的 I/O 完成处理能在第一时间做完。
+- Verified result / 验证结果:
+- Analysis / 分析:
+
+## Q8
+- Prediction / 预测:
+Q8 使用 -s 1 -l 3:50,3:50。种子决定指令序列为：
+PID 0: cpu, io, io_done, io, io_done
+PID 1: cpu, cpu, cpu
+### 默认 (SWITCH_ON_IO + IO_RUN_LATER)
+总时间 15，CPU 利用率 8/15 ≈ 53.33%
+状态表:
+Time PID 0 PID 1 CPU IOs
+1 RUN:cpu READY 1
+2 RUN:io READY 1
+3 BLOCKED RUN:cpu 1
+4 BLOCKED RUN:cpu 1
+5 BLOCKED RUN:cpu 1
+6 BLOCKED DONE 1
+7 BLOCKED DONE 1
+8 RUN:io_done DONE 1
+9 RUN:io DONE 1
+10 BLOCKED DONE 1
+11 BLOCKED DONE 1
+12 BLOCKED DONE 1
+13 BLOCKED DONE 1
+14 BLOCKED DONE 1
+15 RUN:io_done DONE 1
+16 DONE DONE
+
+### -I IO_RUN_IMMEDIATE
+总时间 16，CPU 利用率 9/16 ≈ 56.25%。
+状态表:
+Time PID 0 PID 1 CPU IOs
+1 RUN:cpu READY 1
+2 RUN:io READY 1
+3 BLOCKED RUN:cpu 1
+4 BLOCKED RUN:cpu 1
+5 BLOCKED RUN:cpu 1
+6 BLOCKED DONE 1
+7 BLOCKED DONE 1
+8 RUN:io_done DONE 1
+9 RUN:io DONE 1
+10 BLOCKED DONE 1
+11 BLOCKED DONE 1
+12 BLOCKED DONE 1
+13 BLOCKED DONE 1
+14 BLOCKED DONE 1
+15 RUN:io_done DONE 1
+16 DONE DONE
+
+### -S SWITCH_ON_END
+总时间 17，CPU 利用率 8/17 ≈ 47.06%。
+状态表:
+Time PID 0 PID 1 CPU IOs
+1 RUN:cpu READY 1
+2 RUN:io READY 1
+3 BLOCKED READY 1
+4 BLOCKED READY 1
+5 BLOCKED READY 1
+6 BLOCKED READY 1
+7 BLOCKED READY 1
+8 RUN:io_done READY 1
+9 RUN:io READY 1
+10 BLOCKED READY 1
+11 BLOCKED READY 1
+12 BLOCKED READY 1
+13 BLOCKED READY 1
+14 BLOCKED READY 1
+15 RUN:io_done READY 1
+16 DONE RUN:cpu 1
+17 DONE RUN:cpu 1
+18 DONE RUN:cpu 1
+19 DONE DONE
+  
+### seed 2 (default, SWITCH_ON_IO + IO_RUN_LATER)
+PID 0: io, io_done, io, io_done, cpu
+PID 1: cpu, io, io_done, io, io_done
+总时间 28，CPU 利用率 8/28 ≈ 28.57%。
+状态表:
+Time PID 0 PID 1 CPU IOs
+1 RUN:io RUN:cpu 1
+2 BLOCKED RUN:io 1 1
+3 BLOCKED BLOCKED 1 1
+4 BLOCKED BLOCKED 1 1
+5 BLOCKED BLOCKED 1 1
+6 BLOCKED BLOCKED 1 1
+7 BLOCKED RUN:io_done 1 1
+8 RUN:io_done RUN:io 1
+9 RUN:io BLOCKED 1 1
+10 BLOCKED BLOCKED 1 1
+11 BLOCKED BLOCKED 1 1
+12 BLOCKED BLOCKED 1 1
+13 BLOCKED BLOCKED 1 1
+14 BLOCKED RUN:io_done 1 1
+15 RUN:io_done RUN:cpu 1
+16 RUN:cpu DONE 1
+17 DONE DONE
+
+### seed 2 (-I IO_RUN_IMMEDIATE)
+总时间 18，CPU 利用率 8/18 ≈ 44.44%。
+状态表:
+Time PID 0 PID 1 CPU IOs
+1 RUN:io RUN:cpu 1
+2 BLOCKED RUN:io 1 1
+3 BLOCKED BLOCKED 1 1
+4 BLOCKED BLOCKED 1 1
+5 BLOCKED BLOCKED 1 1
+6 BLOCKED BLOCKED 1 1
+7 RUN:io_done BLOCKED 1 1
+8 RUN:io RUN:io_done 1
+9 BLOCKED RUN:io 1 1
+10 BLOCKED BLOCKED 1 1
+11 BLOCKED BLOCKED 1 1
+12 BLOCKED BLOCKED 1 1
+13 BLOCKED BLOCKED 1 1
+14 RUN:io_done BLOCKED 1 1
+15 RUN:cpu RUN:io_done 1
+16 DONE RUN:cpu 1
+17 DONE DON
+
+### seed 2 (-S SWITCH_ON_END)
+总时间 25，CPU 利用率 8/25 = 32%。
+状态表:
+Time PID 0 PID 1 CPU IOs
+1 RUN:io READY 1
+2 BLOCKED READY 1
+3 BLOCKED READY 1
+4 BLOCKED READY 1
+5 BLOCKED READY 1
+6 BLOCKED READY 1
+7 RUN:io_done READY 1
+8 RUN:io READY 1
+9 BLOCKED READY 1
+10 BLOCKED READY 1
+11 BLOCKED READY 1
+12 BLOCKED READY 1
+13 BLOCKED READY 1
+14 RUN:io_done READY 1
+15 RUN:cpu READY 1
+16 DONE RUN:cpu 1
+17 DONE RUN:io 1
+18 DONE BLOCKED 1
+19 DONE BLOCKED 1
+20 DONE BLOCKED 1
+21 DONE BLOCKED 1
+22 DONE BLOCKED 1
+23 DONE RUN:io_done 1
+24 DONE RUN:io 1
+25 DONE BLOCKED 1
+26 DONE BLOCKED 1
+27 DONE BLOCKED 1
+28 DONE BLOCKED 1
+29 DONE BLOCKED 1
+30 DONE RUN:io_done 1
+31 DONE RUN:cpu 1
+32 DONE DONE
+
+### seed 3 (default, SWITCH_ON_IO + IO_RUN_LATER)
+PID 0: io, io_done, io, io_done, cpu
+PID 1: io, io_done, io, io_done, cpu
+总时间 30，CPU 利用率 8/30 ≈ 26.67%。
+状态表:
+Time PID 0 PID 1 CPU IOs
+1 RUN:io READY 1
+2 BLOCKED RUN:io 2
+3 BLOCKED BLOCKED 2
+4 BLOCKED BLOCKED 2
+5 BLOCKED BLOCKED 2
+6 BLOCKED BLOCKED 2
+7 RUN:io_done BLOCKED 1 1
+8 RUN:io RUN:io_done 1
+9 BLOCKED RUN:io 1 1
+10 BLOCKED BLOCKED 1 1
+11 BLOCKED BLOCKED 1 1
+12 BLOCKED BLOCKED 1 1
+13 BLOCKED BLOCKED 1 1
+14 RUN:io_done RUN:io_done 1 1
+15 RUN:cpu RUN:cpu 1
+16 DONE DONE
+
+### seed 3 (-I IO_RUN_IMMEDIATE)
+总时间 18，CPU 利用率 8/18 ≈ 44.44%。
+状态表:
+Time PID 0 PID 1 CPU IOs
+1 RUN:io READY 1
+2 BLOCKED RUN:io 2
+3 BLOCKED BLOCKED 2
+4 BLOCKED BLOCKED 2
+5 BLOCKED BLOCKED 2
+6 BLOCKED BLOCKED 2
+7 RUN:io_done BLOCKED 1 1
+8 RUN:io RUN:io_done 1
+9 BLOCKED RUN:io 1 1
+10 BLOCKED BLOCKED 1 1
+11 BLOCKED BLOCKED 1 1
+12 BLOCKED BLOCKED 1 1
+13 BLOCKED BLOCKED 1 1
+14 RUN:io_done RUN:io_done 1 1
+15 RUN:cpu RUN:cpu 1
+16 DONE DONE
+
+### seed 3 (-S SWITCH_ON_END)
+总时间 32，CPU 利用率 8/32 = 25%。
+状态表:
+Time PID 0 PID 1 CPU IOs
+1 RUN:io READY 1
+2 BLOCKED READY 1
+3 BLOCKED READY 1
+4 BLOCKED READY 1
+5 BLOCKED READY 1
+6 BLOCKED READY 1
+7 RUN:io_done READY 1
+8 RUN:io READY 1
+9 BLOCKED READY 1
+10 BLOCKED READY 1
+11 BLOCKED READY 1
+12 BLOCKED READY 1
+13 BLOCKED READY 1
+14 RUN:io_done READY 1
+15 RUN:cpu READY 1
+16 DONE RUN:io 1
+17 DONE BLOCKED 1
+18 DONE BLOCKED 1
+19 DONE BLOCKED 1
+20 DONE BLOCKED 1
+21 DONE BLOCKED 1
+22 DONE RUN:io_done 1
+23 DONE RUN:io 1
+24 DONE BLOCKED 1
+25 DONE BLOCKED 1
+26 DONE BLOCKED 1
+27 DONE BLOCKED 1
+28 DONE BLOCKED 1
+29 DONE RUN:io_done 1
+30 DONE RUN:cpu 1
+31 DONE DONE
+- Reasoning / 理由:种子 1 下，PID 0 的指令是 cpu, io, io_done, io, io_done，PID 1 是三条 cpu。
+- 默认：PID 0 先跑 1 tick CPU，然后 I/O 阻塞；I/O 完成后排在队尾，先让 PID 1 跑完 3 条 cpu，再让 PID 0 完成后续 I/O。
+- IO_RUN_IMMEDIATE：PID 0 的 I/O 一完成就立刻重跑，不等 PID 1，所以 PID 0 能更快推进自己的 I/O 序列。
+- SWITCH_ON_END：只有进程结束才切换，所以 PID 0 阻塞期间 CPU 完全空闲，PID 1 要等 PID 0 全部跑完才能开始。
+- Verified result / 验证结果:
+- Analysis / 分析:
+
