@@ -1,0 +1,27 @@
+ARG policy RR
+ARG jobs 3
+ARG maxlen 10
+ARG seed 1
+
+Here is the job list, with the run time of each job: 
+  Job 0 ( length = 2 )
+  Job 1 ( length = 9 )
+  Job 2 ( length = 8 )
+
+
+** Solutions **
+
+Execution trace:
+  [ time   0 ] Run job   0 for 2.00 secs ( DONE at 2.00 )
+  [ time   2 ] Run job   1 for 5.00 secs
+  [ time   7 ] Run job   2 for 5.00 secs
+  [ time  12 ] Run job   1 for 4.00 secs ( DONE at 16.00 )
+  [ time  16 ] Run job   2 for 3.00 secs ( DONE at 19.00 )
+
+Final statistics:
+  Job   0 -- Response: 0.00  Turnaround 2.00  Wait 0.00
+  Job   1 -- Response: 2.00  Turnaround 16.00  Wait 7.00
+  Job   2 -- Response: 7.00  Turnaround 19.00  Wait 11.00
+
+  Average -- Response: 3.00  Turnaround 12.33  Wait 6.00
+

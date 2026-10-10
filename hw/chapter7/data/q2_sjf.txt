@@ -1,0 +1,25 @@
+ARG policy SJF
+ARG jobs 3
+ARG maxlen 10
+ARG seed 1
+
+Here is the job list, with the run time of each job: 
+  Job 0 ( length = 2 )
+  Job 1 ( length = 9 )
+  Job 2 ( length = 8 )
+
+
+** Solutions **
+
+Execution trace:
+  [ time   0 ] Run job 0 for 2.00 secs ( DONE at 2.00 )
+  [ time   2 ] Run job 2 for 8.00 secs ( DONE at 10.00 )
+  [ time  10 ] Run job 1 for 9.00 secs ( DONE at 19.00 )
+
+Final statistics:
+  Job   0 -- Response: 0.00  Turnaround 2.00  Wait 0.00
+  Job   2 -- Response: 2.00  Turnaround 10.00  Wait 2.00
+  Job   1 -- Response: 10.00  Turnaround 19.00  Wait 10.00
+
+  Average -- Response: 4.00  Turnaround 10.33  Wait 4.00
+
