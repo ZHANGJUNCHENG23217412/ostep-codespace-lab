@@ -8,16 +8,6 @@
 python3 ./ext/ostep-homework/cpu-sched/scheduler.py -l 100,200,300 -p FIFO -c
 python3 ./ext/ostep-homework/cpu-sched/scheduler.py -l 100,200,300 -p SJF -c
 python3 ./ext/ostep-homework/cpu-sched/scheduler.py -l 100,200,300 -p RR -q 1 -c
-# Chapter 7 分析
-
-## Q1: FIFO vs SJF vs RR (q=1)，工作负载 100,200,300
-
-### 命令
-
-```bash
-python3 ./ext/ostep-homework/cpu-sched/scheduler.py -l 100,200,300 -p FIFO -c
-python3 ./ext/ostep-homework/cpu-sched/scheduler.py -l 100,200,300 -p SJF -c
-python3 ./ext/ostep-homework/cpu-sched/scheduler.py -l 100,200,300 -p RR -q 1 -c
 ```
 
 ### 结果汇总
